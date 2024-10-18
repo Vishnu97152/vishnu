@@ -1,0 +1,914 @@
+alertmanager:
+  alertmanagerSpec:
+    automountServiceAccountToken: true
+    clusterAdvertiseAddress: false
+    externalUrl: null
+    forceEnableClusterMode: false
+    image:
+      registry: quay.io
+      repository: prometheus/alertmanager
+      tag: v0.27.0
+    listenLocal: false
+    logFormat: logfmt
+    logLevel: info
+    minReadySeconds: 0
+    nodeSelector:
+      environment: monitoring
+    paused: false
+    podAntiAffinityTopologyKey: kubernetes.io/hostname
+    portName: http-web
+    replicas: 1
+    retention: 120h
+    routePrefix: /
+    securityContext:
+      fsGroup: 2000
+      runAsGroup: 2000
+      runAsNonRoot: true
+      runAsUser: 1000
+      seccompProfile:
+        type: RuntimeDefault
+    useExistingSecret: false
+  apiVersion: v2
+  config:
+    global:
+      resolve_timeout: 5m
+    inhibit_rules:
+    - equal:
+      - namespace
+      - alertname
+      source_matchers:
+      - severity = critical
+      target_matchers:
+      - severity =~ warning|info
+    - equal:
+      - namespace
+      - alertname
+      source_matchers:
+      - severity = warning
+      target_matchers:
+      - severity = info
+    - equal:
+      - namespace
+      source_matchers:
+      - alertname = InfoInhibitor
+      target_matchers:
+      - severity = info
+    - target_matchers:
+      - alertname = InfoInhibitor
+    receivers:
+    - name: "null"
+    route:
+      group_by:
+      - namespace
+      group_interval: 5m
+      group_wait: 30s
+      receiver: "null"
+      repeat_interval: 12h
+      routes:
+      - matchers:
+        - alertname = "Watchdog"
+        receiver: "null"
+    templates:
+    - /etc/alertmanager/config/*.tmpl
+  enabled: true
+  ingress:
+    enabled: false
+  ingressPerReplica:
+    enabled: false
+    tlsSecretPerReplica:
+      enabled: false
+      prefix: alertmanager
+  podDisruptionBudget:
+    enabled: false
+    minAvailable: 1
+  service:
+    externalTrafficPolicy: Cluster
+    ipDualStack:
+      enabled: false
+      ipFamilies:
+      - IPv6
+      - IPv4
+      ipFamilyPolicy: PreferDualStack
+    nodePort: 30903
+    port: 9093
+    sessionAffinity: None
+    sessionAffinityConfig:
+      clientIP:
+        timeoutSeconds: 10800
+    targetPort: 9093
+    type: ClusterIP
+  serviceAccount:
+    automountServiceAccountToken: true
+    create: true
+  serviceMonitor:
+    bearerTokenFile: null
+    enableHttp2: true
+    labelLimit: 0
+    labelNameLengthLimit: 0
+    labelValueLengthLimit: 0
+    sampleLimit: 0
+    selfMonitor: true
+    targetLimit: 0
+  servicePerReplica:
+    enabled: false
+    externalTrafficPolicy: Cluster
+    nodePort: 30904
+    port: 9093
+    targetPort: 9093
+    type: ClusterIP
+  tplConfig: false
+cleanPrometheusOperatorObjectNames: false
+coreDns:
+  enabled: true
+  service:
+    enabled: true
+    ipDualStack:
+      enabled: false
+      ipFamilies:
+      - IPv6
+      - IPv4
+      ipFamilyPolicy: PreferDualStack
+    port: 9153
+    targetPort: 9153
+  serviceMonitor:
+    enabled: true
+    jobLabel: jobLabel
+    labelLimit: 0
+    labelNameLengthLimit: 0
+    labelValueLengthLimit: 0
+    port: http-metrics
+    sampleLimit: 0
+    targetLimit: 0
+crds:
+  enabled: true
+defaultRules:
+  appNamespacesTarget: .*
+  create: true
+  node:
+    fsSelector: fstype!=""
+  rules:
+    alertmanager: true
+    configReloaders: true
+    etcd: true
+    general: true
+    k8sContainerCpuUsageSecondsTotal: true
+    k8sContainerMemoryCache: true
+    k8sContainerMemoryRss: true
+    k8sContainerMemorySwap: true
+    k8sContainerMemoryWorkingSetBytes: true
+    k8sContainerResource: true
+    k8sPodOwner: true
+    kubeApiserverAvailability: true
+    kubeApiserverBurnrate: true
+    kubeApiserverHistogram: true
+    kubeApiserverSlos: true
+    kubeControllerManager: true
+    kubePrometheusGeneral: true
+    kubePrometheusNodeRecording: true
+    kubeProxy: true
+    kubeSchedulerAlerting: true
+    kubeSchedulerRecording: true
+    kubeStateMetrics: true
+    kubelet: true
+    kubernetesApps: true
+    kubernetesResources: true
+    kubernetesStorage: true
+    kubernetesSystem: true
+    network: true
+    node: true
+    nodeExporterAlerting: true
+    nodeExporterRecording: true
+    prometheus: true
+    prometheusOperator: true
+    windows: true
+  runbookUrl: https://runbooks.prometheus-operator.dev/runbooks
+global:
+  rbac:
+    create: true
+    createAggregateClusterRoles: false
+    pspEnabled: false
+grafana:
+  adminPassword: 3FyBOi8M01ymkaIV
+  defaultDashboardsEditable: true
+  defaultDashboardsEnabled: true
+  defaultDashboardsTimezone: utc
+  enabled: true
+  forceDeployDashboards: false
+  forceDeployDatasources: false
+  ingress:
+    annotations:
+      alb.ingress.kubernetes.io/group.name: lulu-preprod-monitoring
+      alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=900
+      alb.ingress.kubernetes.io/scheme: internal
+      alb.ingress.kubernetes.io/target-type: ip
+    enabled: true
+    hosts:
+    - grafana.preprod.lulu.aws
+    ingressClassName: alb
+    path: /
+  persistence:
+    accessModes:
+    - ReadWriteOnce
+    enabled: true
+    finalizers:
+    - kubernetes.io/pvc-protection
+    size: 20Gi
+    storageClassName: storageClassName
+    type: sts
+  prune: false
+  rbac:
+    pspEnabled: false
+  service:
+    portName: http-web
+  serviceAccount:
+    autoMount: true
+    create: true
+  serviceMonitor:
+    enabled: true
+    path: /metrics
+    scheme: http
+    scrapeTimeout: 30s
+  sidecar:
+    dashboards:
+      enableNewTablePanelSyntax: false
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      multicluster:
+        etcd:
+          enabled: false
+        global:
+          enabled: false
+      provider:
+        allowUiUpdates: false
+      searchNamespace: ALL
+    datasources:
+      alertmanager:
+        enabled: true
+        handleGrafanaManagedAlerts: false
+        implementation: prometheus
+        name: Alertmanager
+        uid: alertmanager
+      createPrometheusReplicasDatasources: false
+      defaultDatasourceEnabled: true
+      enabled: true
+      httpMethod: POST
+      isDefaultDatasource: true
+      label: grafana_datasource
+      labelValue: "1"
+      name: Prometheus
+      uid: prometheus
+kube-state-metrics:
+  prometheus:
+    monitor:
+      enabled: true
+      honorLabels: true
+      labelLimit: 0
+      labelNameLengthLimit: 0
+      labelValueLengthLimit: 0
+      sampleLimit: 0
+      targetLimit: 0
+  rbac:
+    create: true
+  releaseLabel: true
+  selfMonitor:
+    enabled: false
+kubeApiServer:
+  enabled: true
+  serviceMonitor:
+    jobLabel: component
+    labelLimit: 0
+    labelNameLengthLimit: 0
+    labelValueLengthLimit: 0
+    metricRelabelings:
+    - action: drop
+      regex: apiserver_request_duration_seconds_bucket;(0.15|0.2|0.3|0.35|0.4|0.45|0.6|0.7|0.8|0.9|1.25|1.5|1.75|2|3|3.5|4|4.5|6|7|8|9|15|25|40|50)
+      sourceLabels:
+      - __name__
+      - le
+    sampleLimit: 0
+    selector:
+      matchLabels:
+        component: apiserver
+        provider: kubernetes
+    targetLimit: 0
+  tlsConfig:
+    insecureSkipVerify: false
+    serverName: kubernetes
+kubeControllerManager:
+  enabled: true
+  service:
+    enabled: true
+    ipDualStack:
+      enabled: false
+      ipFamilies:
+      - IPv6
+      - IPv4
+      ipFamilyPolicy: PreferDualStack
+    port: null
+    targetPort: null
+  serviceMonitor:
+    enabled: true
+    https: null
+    insecureSkipVerify: null
+    jobLabel: jobLabel
+    labelLimit: 0
+    labelNameLengthLimit: 0
+    labelValueLengthLimit: 0
+    port: http-metrics
+    sampleLimit: 0
+    serverName: null
+    targetLimit: 0
+kubeDns:
+  enabled: false
+  service:
+    dnsmasq:
+      port: 10054
+      targetPort: 10054
+    ipDualStack:
+      enabled: false
+      ipFamilies:
+      - IPv6
+      - IPv4
+      ipFamilyPolicy: PreferDualStack
+    skydns:
+      port: 10055
+      targetPort: 10055
+  serviceMonitor:
+    jobLabel: jobLabel
+    labelLimit: 0
+    labelNameLengthLimit: 0
+    labelValueLengthLimit: 0
+    sampleLimit: 0
+    targetLimit: 0
+kubeEtcd:
+  enabled: true
+  service:
+    enabled: true
+    ipDualStack:
+      enabled: false
+      ipFamilies:
+      - IPv6
+      - IPv4
+      ipFamilyPolicy: PreferDualStack
+    port: 2381
+    targetPort: 2381
+  serviceMonitor:
+    enabled: true
+    insecureSkipVerify: false
+    jobLabel: jobLabel
+    labelLimit: 0
+    labelNameLengthLimit: 0
+    labelValueLengthLimit: 0
+    port: http-metrics
+    sampleLimit: 0
+    scheme: http
+    targetLimit: 0
+kubeProxy:
+  enabled: true
+  service:
+    enabled: true
+    ipDualStack:
+      enabled: false
+      ipFamilies:
+      - IPv6
+      - IPv4
+      ipFamilyPolicy: PreferDualStack
+    port: 10249
+    targetPort: 10249
+  serviceMonitor:
+    enabled: true
+    https: false
+    jobLabel: jobLabel
+    labelLimit: 0
+    labelNameLengthLimit: 0
+    labelValueLengthLimit: 0
+    port: http-metrics
+    sampleLimit: 0
+    targetLimit: 0
+kubeScheduler:
+  enabled: true
+  service:
+    enabled: true
+    ipDualStack:
+      enabled: false
+      ipFamilies:
+      - IPv6
+      - IPv4
+      ipFamilyPolicy: PreferDualStack
+    port: null
+    targetPort: null
+  serviceMonitor:
+    enabled: true
+    https: null
+    insecureSkipVerify: null
+    jobLabel: jobLabel
+    labelLimit: 0
+    labelNameLengthLimit: 0
+    labelValueLengthLimit: 0
+    port: http-metrics
+    sampleLimit: 0
+    serverName: null
+    targetLimit: 0
+kubeStateMetrics:
+  enabled: true
+kubelet:
+  enabled: true
+  namespace: kube-system
+  serviceMonitor:
+    attachMetadata:
+      node: false
+    cAdvisor: true
+    cAdvisorMetricRelabelings:
+    - action: drop
+      regex: container_cpu_(cfs_throttled_seconds_total|load_average_10s|system_seconds_total|user_seconds_total)
+      sourceLabels:
+      - __name__
+    - action: drop
+      regex: container_fs_(io_current|io_time_seconds_total|io_time_weighted_seconds_total|reads_merged_total|sector_reads_total|sector_writes_total|writes_merged_total)
+      sourceLabels:
+      - __name__
+    - action: drop
+      regex: container_memory_(mapped_file|swap)
+      sourceLabels:
+      - __name__
+    - action: drop
+      regex: container_(file_descriptors|tasks_state|threads_max)
+      sourceLabels:
+      - __name__
+    - action: drop
+      regex: container_spec.*
+      sourceLabels:
+      - __name__
+    - action: drop
+      regex: .+;
+      sourceLabels:
+      - id
+      - pod
+    cAdvisorRelabelings:
+    - action: replace
+      sourceLabels:
+      - __metrics_path__
+      targetLabel: metrics_path
+    honorLabels: true
+    honorTimestamps: true
+    https: true
+    insecureSkipVerify: true
+    labelLimit: 0
+    labelNameLengthLimit: 0
+    labelValueLengthLimit: 0
+    probes: true
+    probesRelabelings:
+    - action: replace
+      sourceLabels:
+      - __metrics_path__
+      targetLabel: metrics_path
+    relabelings:
+    - action: replace
+      sourceLabels:
+      - __metrics_path__
+      targetLabel: metrics_path
+    resource: false
+    resourcePath: /metrics/resource/v1alpha1
+    resourceRelabelings:
+    - action: replace
+      sourceLabels:
+      - __metrics_path__
+      targetLabel: metrics_path
+    sampleLimit: 0
+    targetLimit: 0
+kubernetesServiceMonitors:
+  enabled: true
+nodeExporter:
+  enabled: true
+  forceDeployDashboards: false
+  operatingSystems:
+    darwin:
+      enabled: true
+    linux:
+      enabled: true
+prometheus:
+  agentMode: false
+  enabled: true
+  ingress:
+    enabled: false
+  ingressPerReplica:
+    enabled: false
+    tlsSecretPerReplica:
+      enabled: false
+      prefix: prometheus
+  networkPolicy:
+    enabled: false
+    flavor: kubernetes
+  podDisruptionBudget:
+    enabled: false
+    minAvailable: 1
+  prometheusSpec:
+    allowOverlappingBlocks: false
+    arbitraryFSAccessThroughSMs: false
+    automountServiceAccountToken: true
+    disableCompaction: false
+    enableAdminAPI: false
+    enableRemoteWriteReceiver: false
+    enforcedKeepDroppedTargets: 0
+    enforcedLabelLimit: false
+    enforcedLabelNameLengthLimit: false
+    enforcedLabelValueLengthLimit: false
+    enforcedSampleLimit: false
+    enforcedTargetLimit: false
+    hostNetwork: false
+    ignoreNamespaceSelectors: false
+    image:
+      registry: quay.io
+      repository: prometheus/prometheus
+      tag: v2.54.1
+    listenLocal: false
+    logFormat: logfmt
+    logLevel: info
+    maximumStartupDurationSeconds: 0
+    minReadySeconds: 0
+    nodeSelector:
+      environment: monitoring
+    overrideHonorLabels: false
+    overrideHonorTimestamps: false
+    paused: false
+    podAntiAffinityTopologyKey: kubernetes.io/hostname
+    podMonitorSelectorNilUsesHelmValues: true
+    portName: http-web
+    probeSelectorNilUsesHelmValues: true
+    prometheusExternalLabelNameClear: false
+    queryLogFile: false
+    remoteWriteDashboards: false
+    replicaExternalLabelNameClear: false
+    replicas: 1
+    retention: 10d
+    routePrefix: /
+    ruleSelectorNilUsesHelmValues: true
+    sampleLimit: false
+    scrapeConfigSelectorNilUsesHelmValues: true
+    securityContext:
+      fsGroup: 2000
+      runAsGroup: 2000
+      runAsNonRoot: true
+      runAsUser: 1000
+      seccompProfile:
+        type: RuntimeDefault
+    serviceMonitorSelectorNilUsesHelmValues: true
+    shards: 1
+    tsdb:
+      outOfOrderTimeWindow: 0s
+    walCompression: true
+  service:
+    externalTrafficPolicy: Cluster
+    ipDualStack:
+      enabled: false
+      ipFamilies:
+      - IPv6
+      - IPv4
+      ipFamilyPolicy: PreferDualStack
+    nodePort: 30090
+    port: 9090
+    publishNotReadyAddresses: false
+    reloaderWebPort: 8080
+    sessionAffinity: None
+    sessionAffinityConfig:
+      clientIP:
+        timeoutSeconds: 10800
+    targetPort: 9090
+    type: ClusterIP
+  serviceAccount:
+    automountServiceAccountToken: true
+    create: true
+  serviceMonitor:
+    bearerTokenFile: null
+    labelLimit: 0
+    labelNameLengthLimit: 0
+    labelValueLengthLimit: 0
+    sampleLimit: 0
+    selfMonitor: true
+    targetLimit: 0
+  servicePerReplica:
+    enabled: false
+    externalTrafficPolicy: Cluster
+    ipDualStack:
+      enabled: false
+      ipFamilies:
+      - IPv6
+      - IPv4
+      ipFamilyPolicy: PreferDualStack
+    nodePort: 30091
+    port: 9090
+    targetPort: 9090
+    type: ClusterIP
+  thanosIngress:
+    enabled: false
+    nodePort: 30901
+    servicePort: 10901
+  thanosService:
+    clusterIP: None
+    enabled: false
+    externalTrafficPolicy: Cluster
+    httpNodePort: 30902
+    httpPort: 10902
+    httpPortName: http
+    ipDualStack:
+      enabled: false
+      ipFamilies:
+      - IPv6
+      - IPv4
+      ipFamilyPolicy: PreferDualStack
+    nodePort: 30901
+    port: 10901
+    portName: grpc
+    targetHttpPort: http
+    targetPort: grpc
+    type: ClusterIP
+  thanosServiceExternal:
+    enabled: false
+    externalTrafficPolicy: Cluster
+    httpNodePort: 30902
+    httpPort: 10902
+    httpPortName: http
+    nodePort: 30901
+    port: 10901
+    portName: grpc
+    targetHttpPort: http
+    targetPort: grpc
+    type: LoadBalancer
+  thanosServiceMonitor:
+    bearerTokenFile: null
+    enabled: false
+prometheus-node-exporter:
+  extraArgs:
+  - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|var/lib/kubelet/.+)($|/)
+  - --collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$
+  podLabels:
+    jobLabel: node-exporter
+  prometheus:
+    monitor:
+      enabled: true
+      jobLabel: jobLabel
+      labelLimit: 0
+      labelNameLengthLimit: 0
+      labelValueLengthLimit: 0
+      sampleLimit: 0
+      targetLimit: 0
+  rbac:
+    pspEnabled: false
+  releaseLabel: true
+  service:
+    ipDualStack:
+      enabled: false
+      ipFamilies:
+      - IPv6
+      - IPv4
+      ipFamilyPolicy: PreferDualStack
+    labels:
+      jobLabel: node-exporter
+    portName: http-metrics
+prometheus-windows-exporter:
+  config: |-
+    collectors:
+      enabled: '[defaults],memory,container'
+  podLabels:
+    jobLabel: windows-exporter
+  prometheus:
+    monitor:
+      enabled: true
+      jobLabel: jobLabel
+  releaseLabel: true
+prometheusOperator:
+  admissionWebhooks:
+    certManager:
+      enabled: false
+    createSecretJob:
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        readOnlyRootFilesystem: true
+    deployment:
+      automountServiceAccountToken: true
+      containerSecurityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        readOnlyRootFilesystem: true
+      enabled: false
+      hostNetwork: false
+      image:
+        pullPolicy: IfNotPresent
+        registry: quay.io
+        repository: prometheus-operator/admission-webhook
+      livenessProbe:
+        enabled: true
+        failureThreshold: 3
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 1
+      nodeSelector:
+        environment: monitoring
+      readinessProbe:
+        enabled: true
+        failureThreshold: 3
+        initialDelaySeconds: 5
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 1
+      replicas: 1
+      revisionHistoryLimit: 10
+      securityContext:
+        fsGroup: 65534
+        runAsGroup: 65534
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      service:
+        externalTrafficPolicy: Cluster
+        ipDualStack:
+          enabled: false
+          ipFamilies:
+          - IPv6
+          - IPv4
+          ipFamilyPolicy: PreferDualStack
+        nodePort: 31080
+        nodePortTls: 31443
+        type: ClusterIP
+      serviceAccount:
+        automountServiceAccountToken: false
+        create: true
+      tls:
+        enabled: true
+        internalPort: 10250
+        tlsMinVersion: VersionTLS13
+    enabled: true
+    patch:
+      enabled: true
+      image:
+        pullPolicy: IfNotPresent
+        registry: registry.k8s.io
+        repository: ingress-nginx/kube-webhook-certgen
+        tag: v20221220-controller-v1.5.1-58-g787ea74b6
+      securityContext:
+        runAsGroup: 2000
+        runAsNonRoot: true
+        runAsUser: 2000
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccount:
+        automountServiceAccountToken: true
+        create: true
+      ttlSecondsAfterFinished: 60
+    patchWebhookJob:
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        readOnlyRootFilesystem: true
+    timeoutSeconds: 10
+  automountServiceAccountToken: true
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    readOnlyRootFilesystem: true
+  enabled: true
+  env:
+    GOGC: "30"
+  hostNetwork: false
+  image:
+    pullPolicy: IfNotPresent
+    registry: quay.io
+    repository: prometheus-operator/prometheus-operator
+  kubeletService:
+    enabled: true
+    namespace: kube-system
+  livenessProbe:
+    enabled: true
+    failureThreshold: 3
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+  networkPolicy:
+    enabled: false
+    flavor: kubernetes
+  nodeSelector:
+    environment: monitoring
+  prometheusConfigReloader:
+    enableProbe: false
+    image:
+      registry: quay.io
+      repository: prometheus-operator/prometheus-config-reloader
+  readinessProbe:
+    enabled: true
+    failureThreshold: 3
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+  revisionHistoryLimit: 10
+  secretFieldSelector: type!=kubernetes.io/dockercfg,type!=kubernetes.io/service-account-token,type!=helm.sh/release.v1
+  securityContext:
+    fsGroup: 65534
+    runAsGroup: 65534
+    runAsNonRoot: true
+    runAsUser: 65534
+    seccompProfile:
+      type: RuntimeDefault
+  service:
+    externalTrafficPolicy: Cluster
+    ipDualStack:
+      enabled: false
+      ipFamilies:
+      - IPv6
+      - IPv4
+      ipFamilyPolicy: PreferDualStack
+    nodePort: 30080
+    nodePortTls: 30443
+    type: ClusterIP
+  serviceAccount:
+    automountServiceAccountToken: true
+    create: true
+  serviceMonitor:
+    labelLimit: 0
+    labelNameLengthLimit: 0
+    labelValueLengthLimit: 0
+    sampleLimit: 0
+    selfMonitor: true
+    targetLimit: 0
+  thanosImage:
+    registry: quay.io
+    repository: thanos/thanos
+    tag: v0.36.1
+  tls:
+    enabled: true
+    internalPort: 10250
+    tlsMinVersion: VersionTLS13
+  verticalPodAutoscaler:
+    enabled: false
+    updatePolicy:
+      updateMode: Auto
+thanosRuler:
+  enabled: false
+  ingress:
+    enabled: false
+  podDisruptionBudget:
+    enabled: false
+    minAvailable: 1
+  service:
+    externalTrafficPolicy: Cluster
+    ipDualStack:
+      enabled: false
+      ipFamilies:
+      - IPv6
+      - IPv4
+      ipFamilyPolicy: PreferDualStack
+    nodePort: 30905
+    port: 10902
+    targetPort: 10902
+    type: ClusterIP
+  serviceAccount:
+    create: true
+  serviceMonitor:
+    bearerTokenFile: null
+    labelLimit: 0
+    labelNameLengthLimit: 0
+    labelValueLengthLimit: 0
+    sampleLimit: 0
+    selfMonitor: true
+    targetLimit: 0
+  thanosRulerSpec:
+    externalPrefix: null
+    externalPrefixNilUsesHelmValues: true
+    image:
+      registry: quay.io
+      repository: thanos/thanos
+      tag: v0.36.1
+    listenLocal: false
+    logFormat: logfmt
+    logLevel: info
+    nodeSelector:
+      environment: monitoring
+    paused: false
+    podAntiAffinityTopologyKey: kubernetes.io/hostname
+    portName: web
+    replicas: 1
+    retention: 24h
+    routePrefix: /
+    ruleSelectorNilUsesHelmValues: true
+    securityContext:
+      fsGroup: 2000
+      runAsGroup: 2000
+      runAsNonRoot: true
+      runAsUser: 1000
+      seccompProfile:
+        type: RuntimeDefault
+windowsMonitoring:
+  enabled: false
