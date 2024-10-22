@@ -391,13 +391,17 @@ alertmanager:
   #       {{ end }}
 
   ingress:
-    enabled: false
+    enabled: true
 
     # For Kubernetes >= 1.18 you should specify the ingress-controller via the field ingressClassName
     # See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#specifying-the-class-of-an-ingress
-    # ingressClassName: nginx
+    ingressClassName: alb
 
-    annotations: {}
+    annotations: 
+      alb.ingress.kubernetes.io/scheme: internal
+      alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=900
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/group.name: lulu-preprod-monitoring
 
     labels: {}
 
